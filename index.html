@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HEX → LCH Converter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d14;
+      --surface: #16161f;
+      --surface-2: #1e1e2a;
+      --border: #2a2a38;
+      --text: #e8e8f0;
+      --text-muted: #6b6b82;
+      --text-dim: #9898ae;
+      --accent: #6c63ff;
+      --radius: 16px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 28px 48px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .logo-sep {
+      color: var(--border);
+      margin: 0 4px;
+    }
+
+    .logo-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .hero {
+      padding: 64px 24px 24px;
+      text-align: center;
+      max-width: 600px;
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #e8e8f0 30%, #6b6b82);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      margin-top: 12px;
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Converter card ──────────────────────────────────── */
+    .converter {
+      width: 100%;
+      max-width: 940px;
+      margin: 40px auto 80px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 680px) {
+      .converter { grid-template-columns: 1fr; }
+    }
+
+    /* ── Input panel ─────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 18px 20px 0;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ── Hex input ───────────────────────────────────────── */
+    .hex-preview {
+      margin: 14px 20px 0;
+      height: 180px;
+      border-radius: 10px;
+      background: #7ec6ff;
+      position: relative;
+      transition: background 0.15s ease;
+      overflow: hidden;
+    }
+
+    .hex-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #fff;
+      letter-spacing: 0.02em;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transition: opacity 0.15s;
+      user-select: none;
+    }
+
+    .hex-badge.dark-text {
+      color: #111;
+      text-shadow: none;
+      border-color: rgba(0,0,0,0.15);
+      background: rgba(0,0,0,0.12);
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 20px 20px;
+    }
+
+    .hash-label {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-muted);
+      user-select: none;
+      line-height: 1;
+    }
+
+    .hex-input {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 20px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      color: var(--text);
+      letter-spacing: 0.06em;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+
+    .hex-input::placeholder { color: var(--text-muted); letter-spacing: 0.04em; }
+
+    .hex-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.18);
+    }
+
+    .hex-input.error {
+      border-color: #ff5c5c;
+      box-shadow: 0 0 0 3px rgba(255, 92, 92, 0.15);
+    }
+
+    .color-swatch-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #7ec6ff;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+
+    .color-swatch-btn:hover { transform: scale(1.05); }
+    .color-swatch-btn:active { transform: scale(0.96); }
+
+    /* Hidden native color picker */
+    #native-picker {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 0 20px 20px;
+      line-height: 1.5;
+    }
+
+    /* ── Output panel ────────────────────────────────────── */
+    .output-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-swatch {
+      height: 180px;
+      background: #7ec6ff;
+      position: relative;
+      transition: background 0.15s ease;
+      margin: 14px 20px 0;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .output-hex-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: #fff;
+      letter-spacing: 0.02em;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      user-select: none;
+    }
+
+    .output-hex-badge.dark-text {
+      color: #111;
+      text-shadow: none;
+      border-color: rgba(0,0,0,0.15);
+      background: rgba(0,0,0,0.12);
+    }
+
+    .lch-value-block {
+      padding: 16px 20px 4px;
+    }
+
+    .lch-formula {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .lch-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* ── Sliders ─────────────────────────────────────────── */
+    .sliders {
+      padding: 8px 20px 20px;
+      flex: 1;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .slider-row:first-child { border-top: none; }
+
+    .slider-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dim);
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .slider-track-wrap {
+      flex: 1;
+      position: relative;
+      height: 8px;
+    }
+
+    .slider-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 100px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slider-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 100px;
+    }
+
+    .slider-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+
+    .slider-value {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--text);
+      width: 54px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── Copy button ─────────────────────────────────────── */
+    .copy-row {
+      margin: 0 20px 20px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .copy-btn:hover {
+      background: var(--border);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .copy-btn.copied {
+      color: #6affc8;
+      border-color: #6affc8;
+    }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    footer {
+      margin-top: auto;
+      padding: 20px 24px 32px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    footer a { color: var(--text-muted); text-decoration: underline; text-decoration-color: transparent; }
+    footer a:hover { color: var(--text-dim); text-decoration-color: currentColor; }
+
+    /* ── Invalid state ───────────────────────────────────── */
+    .output-panel.invalid .lch-formula { color: var(--text-muted); }
+    .output-panel.invalid .lch-label   { opacity: 0.5; }
+    .output-panel.invalid .output-swatch { background: var(--surface-2) !important; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="logo-dot"></div>
+      <span class="logo-text">LCH Converter</span>
+      <span class="logo-sep">·</span>
+      <span class="logo-sub">HEX → LCH</span>
+    </header>
+
+    <div class="hero">
+      <h1>HEX to LCH<br>Color Converter</h1>
+      <p>Enter a hex color and instantly get its perceptually uniform LCH value — lightness, chroma, and hue.</p>
+    </div>
+
+    <div class="converter">
+
+      <!-- Input panel -->
+      <div class="panel" id="input-panel">
+        <div class="panel-header">Input</div>
+        <div class="hex-preview" id="input-preview">
+          <div class="hex-badge" id="input-badge">#7ec6ff</div>
+        </div>
+        <div class="input-row">
+          <span class="hash-label">#</span>
+          <input
+            class="hex-input"
+            id="hex-input"
+            type="text"
+            maxlength="6"
+            placeholder="7ec6ff"
+            value="7ec6ff"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="color-swatch-btn" id="swatch-btn" title="Pick a color" aria-label="Open color picker"></button>
+          <input type="color" id="native-picker" value="#7ec6ff" tabindex="-1" aria-hidden="true" />
+        </div>
+        <p class="hint">Paste or type a 6-digit hex value, or click the swatch to pick a color.</p>
+      </div>
+
+      <!-- Output panel -->
+      <div class="panel output-panel" id="output-panel">
+        <div class="panel-header">LCH Output</div>
+        <div class="output-swatch" id="output-swatch">
+          <div class="output-hex-badge" id="output-badge">#7ec6ff</div>
+        </div>
+
+        <div class="lch-value-block">
+          <div class="lch-formula" id="lch-formula">lch(77.3% 35.7 258.9)</div>
+          <div class="lch-label">CIE LCH · D65</div>
+        </div>
+
+        <div class="sliders">
+          <!-- Lightness -->
+          <div class="slider-row">
+            <div class="slider-label">Lightness</div>
+            <div class="slider-track-wrap">
+              <div class="slider-track">
+                <div class="slider-fill" id="l-fill" style="background: linear-gradient(to right, #000, #fff)"></div>
+              </div>
+              <div class="slider-thumb" id="l-thumb" style="left: 77.3%"></div>
+            </div>
+            <div class="slider-value" id="l-value">77.3%</div>
+          </div>
+
+          <!-- Chroma -->
+          <div class="slider-row">
+            <div class="slider-label">Chroma</div>
+            <div class="slider-track-wrap">
+              <div class="slider-track">
+                <div class="slider-fill" id="c-fill" style="background: linear-gradient(to right, #888, #7ec6ff)"></div>
+              </div>
+              <div class="slider-thumb" id="c-thumb" style="left: 35.7%"></div>
+            </div>
+            <div class="slider-value" id="c-value">35.7</div>
+          </div>
+
+          <!-- Hue -->
+          <div class="slider-row">
+            <div class="slider-label">Hue</div>
+            <div class="slider-track-wrap">
+              <div class="slider-track">
+                <div class="slider-fill" id="h-fill" style="background: linear-gradient(to right, hsl(0,80%,55%), hsl(30,80%,55%), hsl(60,80%,55%), hsl(90,80%,55%), hsl(120,80%,55%), hsl(150,80%,55%), hsl(180,80%,55%), hsl(210,80%,55%), hsl(240,80%,55%), hsl(270,80%,55%), hsl(300,80%,55%), hsl(330,80%,55%), hsl(360,80%,55%))"></div>
+              </div>
+              <div class="slider-thumb" id="h-thumb" style="left: 71.9%"></div>
+            </div>
+            <div class="slider-value" id="h-value">258.9°</div>
+          </div>
+        </div>
+
+        <div class="copy-row">
+          <button class="copy-btn" id="copy-lch">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy LCH
+          </button>
+          <button class="copy-btn" id="copy-hex">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy HEX
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Perceptually uniform color space · CIE LCH D65 · Built for design teams
+    </footer>
+  </div>
+
+  <script>
+    // ── Color math ─────────────────────────────────────────────────────────────
+
+    function hexToRgb(hex) {
+      const h = hex.replace(/^#/, '');
+      if (h.length === 3) {
+        return {
+          r: parseInt(h[0] + h[0], 16),
+          g: parseInt(h[1] + h[1], 16),
+          b: parseInt(h[2] + h[2], 16),
+        };
+      }
+      if (h.length !== 6) return null;
+      return {
+        r: parseInt(h.slice(0, 2), 16),
+        g: parseInt(h.slice(2, 4), 16),
+        b: parseInt(h.slice(4, 6), 16),
+      };
+    }
+
+    function linearize(c) {
+      const v = c / 255;
+      return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+
+    function rgbToXyz(r, g, b) {
+      const rl = linearize(r), gl = linearize(g), bl = linearize(b);
+      // sRGB to XYZ D65 (IEC 61966-2-1)
+      return {
+        x: rl * 0.4124564 + gl * 0.3575761 + bl * 0.1804375,
+        y: rl * 0.2126729 + gl * 0.7151522 + bl * 0.0721750,
+        z: rl * 0.0193339 + gl * 0.1191920 + bl * 0.9503041,
+      };
+    }
+
+    function xyzToLab(x, y, z) {
+      // D65 reference white
+      const Xn = 0.95047, Yn = 1.00000, Zn = 1.08883;
+      const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+      const fx = f(x / Xn), fy = f(y / Yn), fz = f(z / Zn);
+      return {
+        L: 116 * fy - 16,
+        a: 500 * (fx - fy),
+        b: 200 * (fy - fz),
+      };
+    }
+
+    function labToLch(L, a, b) {
+      const C = Math.sqrt(a * a + b * b);
+      let H = Math.atan2(b, a) * (180 / Math.PI);
+      if (H < 0) H += 360;
+      return { L, C, H };
+    }
+
+    function hexToLch(hex) {
+      const rgb = hexToRgb(hex);
+      if (!rgb) return null;
+      const xyz = rgbToXyz(rgb.r, rgb.g, rgb.b);
+      const lab = xyzToLab(xyz.x, xyz.y, xyz.z);
+      return labToLch(lab.L, lab.a, lab.b);
+    }
+
+    // Perceived luminance to decide badge text color
+    function relativeLuminance(hex) {
+      const rgb = hexToRgb(hex);
+      if (!rgb) return 0.5;
+      const { x, y } = rgbToXyz(rgb.r, rgb.g, rgb.b);
+      return y; // Y = luminance
+    }
+
+    // ── DOM refs ───────────────────────────────────────────────────────────────
+    const hexInput     = document.getElementById('hex-input');
+    const inputPreview = document.getElementById('input-preview');
+    const inputBadge   = document.getElementById('input-badge');
+    const swatchBtn    = document.getElementById('swatch-btn');
+    const nativePicker = document.getElementById('native-picker');
+
+    const outputPanel  = document.getElementById('output-panel');
+    const outputSwatch = document.getElementById('output-swatch');
+    const outputBadge  = document.getElementById('output-badge');
+    const lchFormula   = document.getElementById('lch-formula');
+
+    const lFill  = document.getElementById('l-fill');
+    const cFill  = document.getElementById('c-fill');
+    const lThumb = document.getElementById('l-thumb');
+    const cThumb = document.getElementById('c-thumb');
+    const hThumb = document.getElementById('h-thumb');
+    const lValue = document.getElementById('l-value');
+    const cValue = document.getElementById('c-value');
+    const hValue = document.getElementById('h-value');
+
+    const copyLchBtn = document.getElementById('copy-lch');
+    const copyHexBtn = document.getElementById('copy-hex');
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    let currentHex = '7ec6ff';
+    let currentLch = null;
+
+    // ── Update UI ──────────────────────────────────────────────────────────────
+    function update(rawHex) {
+      const clean = rawHex.replace(/^#/, '').trim();
+      const isValid = /^[0-9a-fA-F]{6}$/.test(clean) || /^[0-9a-fA-F]{3}$/.test(clean);
+
+      hexInput.classList.toggle('error', rawHex.length > 0 && !isValid);
+
+      if (!isValid) {
+        outputPanel.classList.add('invalid');
+        lchFormula.textContent = '—';
+        currentLch = null;
+        return;
+      }
+
+      outputPanel.classList.remove('invalid');
+      currentHex = clean;
+
+      const fullHex = '#' + (clean.length === 3
+        ? clean.split('').map(c => c + c).join('')
+        : clean);
+
+      // Previews
+      inputPreview.style.background = fullHex;
+      outputSwatch.style.background = fullHex;
+      swatchBtn.style.background = fullHex;
+      nativePicker.value = fullHex;
+
+      // Badge text
+      const lum = relativeLuminance(fullHex);
+      const dark = lum > 0.35;
+      inputBadge.textContent = fullHex;
+      inputBadge.className = 'hex-badge' + (dark ? ' dark-text' : '');
+      outputBadge.textContent = fullHex;
+      outputBadge.className = 'output-hex-badge' + (dark ? ' dark-text' : '');
+
+      // LCH conversion
+      const lch = hexToLch(fullHex);
+      currentLch = lch;
+
+      const L = lch.L.toFixed(1);
+      const C = lch.C.toFixed(1);
+      const H = lch.H.toFixed(1);
+
+      lchFormula.textContent = `lch(${L}% ${C} ${H})`;
+
+      // Lightness slider — 0..100 range
+      const lPct = Math.min(100, Math.max(0, lch.L));
+      lFill.style.background = `linear-gradient(to right, #000, #fff)`;
+      lThumb.style.left = `${lPct}%`;
+      lValue.textContent = `${L}%`;
+
+      // Chroma slider — 0..150 is typical sRGB max, display 0..100%
+      const maxC = 150;
+      const cPct = Math.min(100, (lch.C / maxC) * 100);
+      cFill.style.background = `linear-gradient(to right, #444, ${fullHex})`;
+      cThumb.style.left = `${cPct}%`;
+      cValue.textContent = C;
+
+      // Hue slider — 0..360
+      const hPct = (lch.H / 360) * 100;
+      hThumb.style.left = `${hPct}%`;
+      hValue.textContent = `${H}°`;
+    }
+
+    // ── Events ─────────────────────────────────────────────────────────────────
+    hexInput.addEventListener('input', e => {
+      update(e.target.value);
+    });
+
+    hexInput.addEventListener('paste', e => {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
+      const cleaned = pasted.replace(/^#/, '').slice(0, 6);
+      hexInput.value = cleaned;
+      update(cleaned);
+    });
+
+    swatchBtn.addEventListener('click', () => nativePicker.click());
+
+    nativePicker.addEventListener('input', e => {
+      const hex = e.target.value.replace('#', '');
+      hexInput.value = hex;
+      update(hex);
+    });
+
+    async function copyText(text, btn) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const orig = btn.innerHTML;
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        btn.classList.add('copied');
+        setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+      } catch {
+        btn.textContent = 'Failed';
+        setTimeout(() => location.reload(), 1000);
+      }
+    }
+
+    copyLchBtn.addEventListener('click', () => {
+      if (!currentLch) return;
+      const { L, C, H } = currentLch;
+      copyText(`lch(${L.toFixed(1)}% ${C.toFixed(1)} ${H.toFixed(1)})`, copyLchBtn);
+    });
+
+    copyHexBtn.addEventListener('click', () => {
+      copyText('#' + currentHex, copyHexBtn);
+    });
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    update('7ec6ff');
+  </script>
+</body>
+</html>
