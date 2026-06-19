@@ -1,5 +1,8 @@
 # HEX → LCH Color Converter
 
+<img width="1520" height="941" alt="Screenshot 2026-06-19 at 11 10 53" src="https://github.com/user-attachments/assets/5ed849dd-4bcc-4ce7-af3a-01e66ca46c98" />
+
+
 A lightweight, zero-dependency browser tool for converting HEX colors to [CIE LCH](https://www.w3.org/TR/css-color-4/#the-lch-notation) (D65). Paste a hex value, get the perceptually uniform LCH equivalent instantly.
 
 ![Preview](https://img.shields.io/badge/no%20build%20step-open%20index.html-6c63ff?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square)
